@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenSSL REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
 
+
 # Core library
 add_library(core
     core/hash.cpp

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <openssl/sha.h>
 #include <sstream>
+
 std::string Hash::hash(const std::string& path) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256; // made a sha256 type variable
