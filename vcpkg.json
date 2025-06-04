@@ -1,9 +1,9 @@
 {
-    "name": "masha",
-    "version": "0.1.0",
-    "dependencies": [
-      "openssl",
-      "cli11"
-    ]
-  }
-  
+  "name": "masha",
+  "version": "0.1.0",
+  "dependencies": [
+    "cli11",
+    "openssl",
+    "sqlite3"
+  ]
+}

@@ -7,14 +7,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Add vcpkg packages
 find_package(OpenSSL REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
-
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 # Core library
 add_library(core
     core/hash.cpp
+    core/scan.cpp
 )
 
-target_link_libraries(core PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+# Link OpenSSL and SQLite to core
+target_link_libraries(core PRIVATE OpenSSL::SSL OpenSSL::Crypto unofficial::sqlite3::sqlite3)
 
 # CLI executable
 add_executable(cli
