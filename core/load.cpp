@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 std::unordered_set<std::string> LoadHash::load(){
-    std::ifstream file("D:/Softwares/Proj/masha/core/mashadb.mh",std::ios::binary);
+    std::ifstream file("mashadb.mh",std::ios::binary);
     std::unordered_set<std::string> hash;
     if(!file){
         std::cerr << "mashadb not opening";
