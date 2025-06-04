@@ -1,38 +1,48 @@
 #include "scan.h"
-#include <iostream>
-#include <sqlite3.h>
+#include "load.h"
 #include "hash.h"
-std::string Scan::scan(const std::string& path) {
-    sqlite3* db;
-    Hash hash;
-    if (sqlite3_open("D:/Softwares/Proj/masha/core/malware_hashes.db", &db) != SQLITE_OK) { /*db open error*/
-    return "Failed to open database";
-    }
-    sqlite3_stmt* stmt;
-    std::string sha256  = hash.hash(path);
-    const char* query = "SELECT 1 FROM malware_hashes WHERE sha256 = ""?"" LIMIT 1;";
+#include <iostream>
 
-    if(sqlite3_prepare(db,query,-1,&stmt,nullptr) !=SQLITE_OK){ /*statement preparation error*/
-        std::cerr << "Failed to prepare statement" << sqlite3_errmsg(db) << std::endl;
-        sqlite3_close(db);
-        return "DB closed";
-    }
-    
-    if (sqlite3_bind_text(stmt, 1, sha256.c_str(), -1, SQLITE_STATIC) != SQLITE_OK) { /*bind error*/
-        std::cerr << "Failed to bind hash\n";
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return "Binding error";
-    }
-    
-    int rc = sqlite3_step(stmt);
-    if (rc != SQLITE_ROW) {  /*checking for hash if SQLITE_ROW exists it means theres some value*/
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return "Not found";
-    }
-    sqlite3_finalize(stmt);
-    return "Malware found";
+void Scan::loadHashesIfNeeded() {
+    if (!hashesLoaded) {
+        LoadHash loader;
+        hashSet = loader.load();
 
-    
+        if (hashSet.empty()) {
+            std::cerr << "Warning: Hash database is empty or failed to load.\n";
+        } else {
+            hashesLoaded = true;
+            std::cout << "Loaded " << hashSet.size() << " hashes into memory.\n";
+        }
+    }
+}
+
+void Scan::scan(const std::string& path) {
+    loadHashesIfNeeded();
+
+    if (hashSet.empty()) {
+        std::cerr << "Error: No hashes loaded, cannot scan.\n";
+        return;
+    }
+
+    Hash sha256;
+    std::string sha256_hash = sha256.hash(path);
+
+    if (sha256_hash == "File not found" ||
+        sha256_hash == "I/O error while reading file" ||
+        sha256_hash == "Non-EOF read error") {
+        std::cerr << "Error hashing file '" << path << "': " << sha256_hash << "\n";
+        return;
+    }
+
+    if (sha256_hash.empty()) {
+        std::cerr << "Error: Empty hash returned for file: " << path << "\n";
+        return;
+    }
+
+    if (hashSet.count(sha256_hash)) {
+        std::cout << "Malware found: " << path << "\n";
+    } else {
+        std::cout << "File is clean: " << path << "\n";
+    }
 }

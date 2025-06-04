@@ -3,3 +3,4 @@ build/
 
 .vs/
 core/malware_hashes.db
+mig.py

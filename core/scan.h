@@ -1,13 +1,13 @@
-#ifndef SCAN_H
-#define SCAN_H
-
+#pragma once
 #include <string>
+#include <unordered_set>
 
+class Scan {
+private:
+    std::unordered_set<std::string> hashSet;
+    bool hashesLoaded = false;
+    void loadHashesIfNeeded();
 
-class Scan
-{
 public:
-    std::string scan(const std::string& path);
+    void scan(const std::string& path);
 };
-
-#endif

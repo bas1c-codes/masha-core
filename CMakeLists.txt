@@ -13,6 +13,7 @@ find_package(unofficial-sqlite3 CONFIG REQUIRED)
 add_library(core
     core/hash.cpp
     core/scan.cpp
+    core/load.cpp
 )
 
 # Link OpenSSL and SQLite to core
