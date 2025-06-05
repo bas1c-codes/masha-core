@@ -22,6 +22,7 @@ void Scan::scan(const std::string& path) {
     loadHashesIfNeeded();
 
     namespace fs = std::filesystem;
+
     try {
         fs::path fpath = path;
 
@@ -36,31 +37,28 @@ void Scan::scan(const std::string& path) {
                     // Skip broken symlinks
                     if (fs::is_symlink(entry.path()) && !fs::exists(entry.path())) {
                         std::cerr << "Skipping broken symlink: " << entry.path() << "\n";
-                        ++dirIter;
-                        continue;
                     }
-
-                    if (fs::is_regular_file(entry.path())) {
+                    else if (fs::is_regular_file(entry.path())) {
                         scan(entry.path().string());
                     }
-
-                    ++dirIter;  // May throw, so inside try-catch
                 }
                 catch (const std::exception& e) {
                     std::cerr << "Error accessing directory entry: " << e.what() << "\n";
-                    // Try to increment iterator to move past problematic entry
-                    try {
-                        ++dirIter;
-                    }
-                    catch (...) {
-                        std::cerr << "Failed to increment directory iterator after exception.\n";
-                        break;
-                    }
+                    // Skip this entry and continue
+                }
+
+                // Safely increment the iterator and catch errors
+                try {
+                    ++dirIter;
+                }
+                catch (const std::exception& e) {
+                    std::cerr << "Error incrementing directory iterator, skipping entry: " << e.what() << "\n";
+                    break;  // Can't recover, so exit loop
                 }
             }
         }
         else {
-            // If path is a file
+            // Path is a file - scan it
             if (hashSet.empty()) {
                 std::cerr << "Error: No hashes loaded, cannot scan.\n";
                 return;
@@ -79,7 +77,7 @@ void Scan::scan(const std::string& path) {
             if (hashSet.count(sha256_hash)) {
                 std::cout << "Malware found: " << path << "\n";
             }
-            // else file is clean, you can uncomment below if you want output
+            // else file is clean, uncomment if you want output
             // else {
             //    std::cout << "File is clean: " << path << "\n";
             // }
