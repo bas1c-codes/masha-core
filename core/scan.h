@@ -6,6 +6,7 @@ class Scan {
 private:
     std::unordered_set<std::string> hashSet;
     bool hashesLoaded = false;
+    bool objectLoaded = false;
     void loadHashesIfNeeded();
 
 public:

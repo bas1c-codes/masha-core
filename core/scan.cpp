@@ -22,15 +22,22 @@ void Scan::scan(const std::string& path) {
     loadHashesIfNeeded();
     /*for checking if give path is a directory or not*/
     namespace fs = std::filesystem;
+    try{
     fs::path fpath = path;
-    if(fs::is_directory(path)){
-            for(const auto& entry:fs::recursive_directory_iterator(fpath)){
-                if(fs::is_regular_file(entry.path())){  /*recursive call*/
+    if(fs::is_directory(fpath)){
+            for (const auto& entry : fs::recursive_directory_iterator(fpath, fs::directory_options::skip_permission_denied)) {
+                try {
+                            if (fs::is_symlink(entry.path()) && !fs::exists(entry.path())) {
+            std::cerr << "Skipping broken symlink: " << entry.path() << "\n";
+            continue;
+        }
+                if (fs::is_regular_file(entry.path())) {
                     scan(entry.path().string());
+                 }
+                 } catch (const std::exception& e) {
+                    std::cerr << "Error accessing " << entry.path() << ": " << e.what() << "\n";
                 }
             }
-
-
     }
     else{  /*do it normal way if it is a file*/
 
@@ -38,7 +45,6 @@ void Scan::scan(const std::string& path) {
         std::cerr << "Error: No hashes loaded, cannot scan.\n";
         return;
     }
-
     Hash sha256;
     std::string sha256_hash = sha256.hash(path);
 
@@ -48,16 +54,14 @@ void Scan::scan(const std::string& path) {
         std::cerr << "Error hashing file '" << path << "': " << sha256_hash << "\n";
         return;
     }
-
-    if (sha256_hash.empty()) {  /*checking if hash is empty*/
-        std::cerr << "Error: Empty hash returned for file: " << path << "\n";
-        return;
-    }
-
     if (hashSet.count(sha256_hash)) {   /*checking if hash is present in memory*/
         std::cout << "Malware found: " << path << "\n";
     } /*else {
         std::cout << "File is clean" << "\n";
     }*/
+    }
+    }
+    catch(const std::exception& e){
+        std::cerr << e.what();
     }
 }
