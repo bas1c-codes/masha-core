@@ -20,48 +20,72 @@ void Scan::loadHashesIfNeeded() {
 
 void Scan::scan(const std::string& path) {
     loadHashesIfNeeded();
-    /*for checking if give path is a directory or not*/
+
     namespace fs = std::filesystem;
-    try{
-    fs::path fpath = path;
-    if(fs::is_directory(fpath)){
-            for (const auto& entry : fs::recursive_directory_iterator(fpath, fs::directory_options::skip_permission_denied)) {
+    try {
+        fs::path fpath = path;
+
+        if (fs::is_directory(fpath)) {
+            fs::recursive_directory_iterator dirIter(fpath, fs::directory_options::skip_permission_denied);
+            fs::recursive_directory_iterator endIter;
+
+            while (dirIter != endIter) {
                 try {
-                            if (fs::is_symlink(entry.path()) && !fs::exists(entry.path())) {
-            std::cerr << "Skipping broken symlink: " << entry.path() << "\n";
-            continue;
-        }
-                if (fs::is_regular_file(entry.path())) {
-                    scan(entry.path().string());
-                 }
-                 } catch (const std::exception& e) {
-                    std::cerr << "Error accessing " << entry.path() << ": " << e.what() << "\n";
+                    const auto& entry = *dirIter;
+
+                    // Skip broken symlinks
+                    if (fs::is_symlink(entry.path()) && !fs::exists(entry.path())) {
+                        std::cerr << "Skipping broken symlink: " << entry.path() << "\n";
+                        ++dirIter;
+                        continue;
+                    }
+
+                    if (fs::is_regular_file(entry.path())) {
+                        scan(entry.path().string());
+                    }
+
+                    ++dirIter;  // May throw, so inside try-catch
+                }
+                catch (const std::exception& e) {
+                    std::cerr << "Error accessing directory entry: " << e.what() << "\n";
+                    // Try to increment iterator to move past problematic entry
+                    try {
+                        ++dirIter;
+                    }
+                    catch (...) {
+                        std::cerr << "Failed to increment directory iterator after exception.\n";
+                        break;
+                    }
                 }
             }
-    }
-    else{  /*do it normal way if it is a file*/
+        }
+        else {
+            // If path is a file
+            if (hashSet.empty()) {
+                std::cerr << "Error: No hashes loaded, cannot scan.\n";
+                return;
+            }
 
-    if (hashSet.empty()) {  /*checking if set is empty (db could not be found probably)*/
-        std::cerr << "Error: No hashes loaded, cannot scan.\n";
-        return;
-    }
-    Hash sha256;
-    std::string sha256_hash = sha256.hash(path);
+            Hash sha256;
+            std::string sha256_hash = sha256.hash(path);
 
-    if (sha256_hash == "File not found" ||  /*checking for has errors*/
-        sha256_hash == "I/O error while reading file" ||
-        sha256_hash == "Non-EOF read error") {
-        std::cerr << "Error hashing file '" << path << "': " << sha256_hash << "\n";
-        return;
+            if (sha256_hash == "File not found" ||
+                sha256_hash == "I/O error while reading file" ||
+                sha256_hash == "Non-EOF read error") {
+                std::cerr << "Error hashing file '" << path << "': " << sha256_hash << "\n";
+                return;
+            }
+
+            if (hashSet.count(sha256_hash)) {
+                std::cout << "Malware found: " << path << "\n";
+            }
+            // else file is clean, you can uncomment below if you want output
+            // else {
+            //    std::cout << "File is clean: " << path << "\n";
+            // }
+        }
     }
-    if (hashSet.count(sha256_hash)) {   /*checking if hash is present in memory*/
-        std::cout << "Malware found: " << path << "\n";
-    } /*else {
-        std::cout << "File is clean" << "\n";
-    }*/
-    }
-    }
-    catch(const std::exception& e){
-        std::cerr << e.what();
+    catch (const std::exception& e) {
+        std::cerr << "Error scanning path '" << path << "': " << e.what() << "\n";
     }
 }
