@@ -1,6 +1,7 @@
 #include "scan.h"
 #include "load.h"
 #include "hash.h"
+#include "quarantine.h"
 #include <iostream>
 #include <filesystem>
 
@@ -18,72 +19,72 @@ void Scan::loadHashesIfNeeded() {
     }
 }
 
-void Scan::scan(const std::string& path) {
+// Helper function to scan a single file
+void Scan::scan(const std::string& filePath) {
+    loadHashesIfNeeded();
+    if (hashSet.empty()) {
+        std::cerr << "Error: No hashes loaded, cannot scan.\n";
+        return;
+    }
+
+    Hash sha256;
+    std::string sha256_hash = sha256.hash(filePath);
+    Quarantine quarantine;
+    if (sha256_hash == "File not found" ||
+        sha256_hash == "I/O error while reading file" ||
+        sha256_hash == "Non-EOF read error") {
+        std::cerr << "Error hashing file '" << filePath << "': " << sha256_hash << "\n";
+        return;
+    }
+
+    if (hashSet.count(sha256_hash)) {
+        std::cout << "Malware found: " << filePath << "\n";
+        quarantine.quarantineMalware(filePath);
+
+    }
+    // Uncomment to show clean files
+    // else {
+    //     std::cout << "File is clean: " << filePath << "\n";
+    // }
+}
+
+// Main scanning function
+/*void Scan::scan(const std::string& path) {
     loadHashesIfNeeded();
 
     namespace fs = std::filesystem;
+    std::error_code ec;
+    fs::path fpath(path);
 
-    try {
-        fs::path fpath = path;
+    if (fs::is_directory(fpath, ec)) {
+        if (ec) {
+            std::cerr << "Error accessing directory: " << ec.message() << "\n";
+            return;
+        }
 
-        if (fs::is_directory(fpath)) {
-            fs::recursive_directory_iterator dirIter(fpath, fs::directory_options::skip_permission_denied);
-            fs::recursive_directory_iterator endIter;
+        for (fs::recursive_directory_iterator it(fpath, fs::directory_options::skip_permission_denied, ec), end;
+             it != end;
+             it.increment(ec)) {
 
-            while (dirIter != endIter) {
-                try {
-                    const auto& entry = *dirIter;
+            if (ec) {
+                std::cerr << "Iterator error: " << ec.message() << "\n";
+                continue;
+            }
 
-                    // Skip broken symlinks
-                    if (fs::is_symlink(entry.path()) && !fs::exists(entry.path())) {
-                        std::cerr << "Skipping broken symlink: " << entry.path() << "\n";
-                    }
-                    else if (fs::is_regular_file(entry.path())) {
-                        scan(entry.path().string());
-                    }
-                }
-                catch (const std::exception& e) {
-                    std::cerr << "Error accessing directory entry: " << e.what() << "\n";
-                    // Skip this entry and continue
-                }
+            const fs::path& currentPath = it->path();
 
-                // Safely increment the iterator and catch errors
-                try {
-                    ++dirIter;
-                }
-                catch (const std::exception& e) {
-                    std::cerr << "Error incrementing directory iterator, skipping entry: " << e.what() << "\n";
-                    break;  // Can't recover, so exit loop
-                }
+            if (fs::is_symlink(currentPath, ec) && !fs::exists(currentPath, ec)) {
+                std::cerr << "Skipping broken symlink: " << currentPath << "\n";
+                continue;
+            }
+
+            if (fs::is_regular_file(currentPath, ec)) {
+                scanFile(currentPath.string());
             }
         }
-        else {
-            // Path is a file - scan it
-            if (hashSet.empty()) {
-                std::cerr << "Error: No hashes loaded, cannot scan.\n";
-                return;
-            }
-
-            Hash sha256;
-            std::string sha256_hash = sha256.hash(path);
-
-            if (sha256_hash == "File not found" ||
-                sha256_hash == "I/O error while reading file" ||
-                sha256_hash == "Non-EOF read error") {
-                std::cerr << "Error hashing file '" << path << "': " << sha256_hash << "\n";
-                return;
-            }
-
-            if (hashSet.count(sha256_hash)) {
-                std::cout << "Malware found: " << path << "\n";
-            }
-            // else file is clean, uncomment if you want output
-            // else {
-            //    std::cout << "File is clean: " << path << "\n";
-            // }
-        }
+    } else if (fs::is_regular_file(fpath, ec)) {
+        scanFile(path);
+    } else {
+        std::cerr << "Path is neither a file nor a directory or is inaccessible: " << path << "\n";
     }
-    catch (const std::exception& e) {
-        std::cerr << "Error scanning path '" << path << "': " << e.what() << "\n";
-    }
-}
+}*/

@@ -8,6 +8,7 @@ private:
     bool hashesLoaded = false;
     bool objectLoaded = false;
     void loadHashesIfNeeded();
+    void scanFile(const std::string& filePath);
 
 public:
     void scan(const std::string& path);
