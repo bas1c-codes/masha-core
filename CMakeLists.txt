@@ -13,10 +13,11 @@ add_library(core
     core/scan.cpp
     core/load.cpp
     core/quarantine.cpp
+    core/encrypt.cpp
 )
 
 # Link OpenSSL and SQLite to core
-target_link_libraries(core PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(core PRIVATE OpenSSL::SSL OpenSSL::Crypto Crypt32)
 
 # CLI executable
 add_executable(cli

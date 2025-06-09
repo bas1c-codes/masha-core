@@ -4,8 +4,7 @@
 #include <iostream>
 #include <filesystem>
 #include <chrono>
-
-
+#include "encrypt.h"
 std::string getLocalAppDataFolder() {
     PWSTR path = NULL;
     std::string result;
@@ -40,8 +39,9 @@ void Quarantine::quarantineMalware(const std::string& originalPath) {
     auto timestamp = std::chrono::system_clock::now().time_since_epoch().count();
     std::string uniqueFilename = filename + "_" + std::to_string(timestamp);
     std::string destPath = quarantineDir + "\\" + uniqueFilename;
-    std::cout << quarantineDir;
     if (MoveFileA(originalPath.c_str(), destPath.c_str())) {
+        Encrypt encrypt;
+        encrypt.encryptFile(destPath);
         std::cout << "File quarantined to: " << destPath << "\n";
     } else {
         DWORD err = GetLastError();
