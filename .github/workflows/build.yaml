@@ -8,20 +8,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ make libssl-dev libcli11-dev
+    - name: Set up vcpkg
+      shell: cmd
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
 
-    - name: Create build directory
-      run: mkdir -p build
-
-    - name: Run CMake
-      run: cmake -S . -B build
+    - name: Configure with CMake (manifest mode)
+      run: >
+        cmake -S . -B build
+        -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+        -DVCPKG_MANIFEST_MODE=ON
+      shell: pwsh
 
     - name: Build
-      run: cmake --build build
+      run: cmake --build build --config Debug
