@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <chrono>
 
+
 std::string getLocalAppDataFolder() {
     PWSTR path = NULL;
     std::string result;
