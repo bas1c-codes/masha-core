@@ -4,7 +4,7 @@
 #include "quarantine.h"
 #include <iostream>
 #include <filesystem>
-
+#include "yara.h"
 void Scan::loadHashesIfNeeded() {
     if (!hashesLoaded) {
         LoadHash loader;
@@ -42,10 +42,11 @@ void Scan::scan(const std::string& filePath) {
         quarantine.quarantineMalware(filePath);
 
     }
-    // Uncomment to show clean files
-    // else {
-    //     std::cout << "File is clean: " << filePath << "\n";
-    // }
+    else {
+        Yara yara;
+        std::cout << "Checking with yara";
+        yara.yaraCheck(filePath);
+    }
 }
 
 // Main scanning function

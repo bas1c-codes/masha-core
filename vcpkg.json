@@ -4,6 +4,7 @@
   "dependencies": [
     "cli11",
     "openssl",
-    "sqlite3"
+    "sqlite3",
+    "yara"
   ]
 }
