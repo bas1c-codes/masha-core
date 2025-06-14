@@ -9,9 +9,9 @@ int main(int argc, char **argv){
     std::string path;
 
     app.add_option("-s",path,"Scan the file");
-    //app.add_option("-y",path,"Scan the file");
+    app.add_option("-y",path,"Scan the file");
     CLI11_PARSE(app, argc, argv);
-    scan.scan(path);
-    //yara.yaraCheck(path);
+    //scan.scan(path);
+    yara.yaraCheck(path);
     return 0;     
 }

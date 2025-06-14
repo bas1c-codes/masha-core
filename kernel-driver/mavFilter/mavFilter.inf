@@ -1,0 +1,51 @@
+[Version]
+Signature   = "$Windows NT$"
+Class       = "ActivityMonitor"
+ClassGuid   = {b86dff51-a31e-4bac-b3cf-e8cfe75c9fc2}
+Provider    = "Masha Antivirus"
+DriverVer   = 06/14/2025,1.0.0.0
+CatalogFile = mavFilter.cat
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 12  ; %SystemRoot%\System32\drivers
+
+[SourceDisksFiles]
+mavFilter.sys = 1
+
+[SourceDisksNames]
+1 = %DiskName%,,, 
+
+[DefaultInstall.ntx86]
+CopyFiles = DriverCopyFiles
+
+[DefaultInstall.ntamd64]
+CopyFiles = DriverCopyFiles
+
+[DriverCopyFiles]
+mavFilter.sys
+
+[DefaultInstall.Services]
+AddService = mavFilter, 0x00000002, mavFilter_Service_Install
+
+[DefaultUninstall.ntx86]
+DelFiles = DriverCopyFiles
+DelService = mavFilter,0x200
+LegacyUninstall = 1
+
+[DefaultUninstall.ntamd64]
+DelFiles = DriverCopyFiles
+DelService = mavFilter,0x200
+LegacyUninstall = 1
+
+
+[mavFilter_Service_Install]
+DisplayName    = "mavFilter"
+ServiceType    = 2
+StartType      = 0
+ErrorControl   = 1
+ServiceBinary  = %12%\mavFilter.sys
+LoadOrderGroup = "FSFilter Activity Monitor"
+
+[Strings]
+DiskName = "Masha Antivirus Filter Driver Disk"
