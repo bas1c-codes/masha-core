@@ -17,6 +17,7 @@
 
 core/       # Core antivirus engine 
 cli/        # CLI for interacting with core
+kernel-driver/ # Code for minifilter driver for realtime scanning
 CMakeLists.txt # Build file
 
 ## 🔧 Requirements
