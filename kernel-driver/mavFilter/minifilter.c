@@ -43,6 +43,7 @@ NTSTATUS DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING Regi
         if (!NT_SUCCESS(status)) {
             FltUnregisterFilter(FilterHandle);
         }
+        KdPrint(("Driver loaded"));
     }
     return status;
 }
@@ -61,20 +62,6 @@ FLT_PREOP_CALLBACK_STATUS createPreOp(
 ) {
     UNREFERENCED_PARAMETER(FltObjects); // Avoid warning
     *CompletionContext = NULL; // Fix uninitialized out parameter (C6101)
-
-    NTSTATUS status;
-    PFLT_FILE_NAME_INFORMATION FileNameInformation;
-
-    status = FltGetFileNameInformation(Data, FLT_FILE_NAME_NORMALIZED | FLT_FILE_NAME_QUERY_DEFAULT, &FileNameInformation);
-    if (NT_SUCCESS(status)) {
-        status = FltParseFileNameInformation(FileNameInformation);
-        if (NT_SUCCESS(status)) {
-            KdPrint(("Opened/Created file: %wZ\n", &FileNameInformation->Name));
-            FltReleaseFileNameInformation(FileNameInformation);
-            return FLT_PREOP_SUCCESS_NO_CALLBACK;
-        }
-        FltReleaseFileNameInformation(FileNameInformation);
-    }
     return FLT_PREOP_SUCCESS_WITH_CALLBACK;
 }
 
@@ -89,6 +76,43 @@ FLT_POSTOP_CALLBACK_STATUS createPostOp(
     UNREFERENCED_PARAMETER(FltObjects);
     UNREFERENCED_PARAMETER(CompletionContext);
     UNREFERENCED_PARAMETER(Flags);
+    
+    NTSTATUS status;
+    PFLT_FILE_NAME_INFORMATION FileNameInformation = NULL;
+    PFLT_VOLUME RetVolume = FltObjects->Volume;
+    PDEVICE_OBJECT DiskDeviceObject = NULL;
+    UNICODE_STRING Dos = { 0 };
+   
 
-    return FLT_POSTOP_FINISHED_PROCESSING;
+    if (!Data->Iopb || !Data->Iopb->TargetFileObject || !Data->Iopb->TargetFileObject->DeviceObject) /*Handling a rare edge case in which data is null*/
+        return FLT_POSTOP_FINISHED_PROCESSING;
+   
+
+    status = FltGetFileNameInformation(Data, FLT_FILE_NAME_NORMALIZED | FLT_FILE_NAME_QUERY_DEFAULT, &FileNameInformation);
+
+    if (!NT_SUCCESS(status)) goto Cleanup;
+    status = FltParseFileNameInformation(FileNameInformation);
+    if (!NT_SUCCESS(status)) goto Cleanup;   
+    status = FltGetDiskDeviceObject(RetVolume, &DiskDeviceObject);
+    if (!NT_SUCCESS(status)) goto Cleanup;
+    status = IoVolumeDeviceToDosName(DiskDeviceObject, &Dos);
+    if (!NT_SUCCESS(status)) goto Cleanup;
+    WCHAR fullPathBuffer[1024];
+    UNICODE_STRING fullPath;
+    fullPath.Buffer = fullPathBuffer;
+    fullPath.Length = 0;
+    fullPath.MaximumLength = sizeof(fullPathBuffer);
+
+    RtlCopyUnicodeString(&fullPath, &Dos);                          // Copy C:
+    RtlAppendUnicodeStringToString(&fullPath, &FileNameInformation->Name);    // Append \Users\file.txt
+
+    KdPrint(("Full File Path: %wZ\n", &fullPath));
+
+    /*Cleanup*/
+    Cleanup:
+        if (FileNameInformation) FltReleaseFileNameInformation(FileNameInformation);
+        if (Dos.Buffer) ExFreePoolWithTag(Dos.Buffer, 'TDnI');
+        if (DiskDeviceObject) ObDereferenceObject(DiskDeviceObject);
+        return FLT_POSTOP_FINISHED_PROCESSING;
+   
 }
