@@ -5,6 +5,6 @@ class Yara{
     private:
       
     public:
-        void yaraCheck(const std::string& filePath);
+        bool yaraCheck(const std::string& filePath);
 };
 #endif

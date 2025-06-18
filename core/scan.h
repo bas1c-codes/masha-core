@@ -11,5 +11,5 @@ private:
     void scanFile(const std::string& filePath);
 
 public:
-    void scan(const std::string& path);
+    bool scan(const std::string& path);
 };

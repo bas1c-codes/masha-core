@@ -20,11 +20,11 @@ void Scan::loadHashesIfNeeded() {
 }
 
 // Helper function to scan a single file
-void Scan::scan(const std::string& filePath) {
+bool Scan::scan(const std::string& filePath) {
     loadHashesIfNeeded();
     if (hashSet.empty()) {
         std::cerr << "Error: No hashes loaded, cannot scan.\n";
-        return;
+        return false;
     }
 
     Hash sha256;
@@ -34,18 +34,23 @@ void Scan::scan(const std::string& filePath) {
         sha256_hash == "I/O error while reading file" ||
         sha256_hash == "Non-EOF read error") {
         std::cerr << "Error hashing file '" << filePath << "': " << sha256_hash << "\n";
-        return;
+        return false;
     }
 
     if (hashSet.count(sha256_hash)) {
         std::cout << "Malware found: " << filePath << "\n";
         quarantine.quarantineMalware(filePath);
-
+        return true;
     }
     else {
         Yara yara;
         std::cout << "Checking with yara";
-        yara.yaraCheck(filePath);
+        if(yara.yaraCheck(filePath)){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 }
 

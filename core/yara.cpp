@@ -23,19 +23,19 @@ int yaraCallback(YR_SCAN_CONTEXT* context, int message, void* messageData, void*
     return CALLBACK_CONTINUE;
 }
 
-void Yara::yaraCheck(const std::string& path) {
+bool Yara::yaraCheck(const std::string& path) {
     Quarantine quarantine;
 
     std::ifstream file(path);
     if (!file.good()) {
         std::cerr << "[YARA] File not accessible: " << path << std::endl;
-        return;
+        return false;
     }
     file.close();
 
     if (yr_initialize() != ERROR_SUCCESS) {
         std::cerr << "[YARA] Failed to initialize YARA." << std::endl;
-        return;
+        return false;
     }
 
     YR_RULES* rules = nullptr;
@@ -44,7 +44,7 @@ void Yara::yaraCheck(const std::string& path) {
     if (loadResult != ERROR_SUCCESS || rules == nullptr) {
         std::cerr << "[YARA] Unable to load compiled rules: " << rulePath << " (error " << loadResult << ")" << std::endl;
         yr_finalize();
-        return;
+        return false;
     }
 
     CallbackContext ctx{ path, &quarantine };
@@ -52,12 +52,16 @@ void Yara::yaraCheck(const std::string& path) {
 
     if (scanResult != ERROR_SUCCESS) {
         std::cerr << "[YARA] Failed to scan file: " << path << " (error " << scanResult << ")" << std::endl;
+        return false;
     }
 
     if (ctx.matchFound) {
         ctx.quarantine->quarantineMalware(path);
+        return true;
     }
 
     yr_rules_destroy(rules);
     yr_finalize();
+    
+
 }
